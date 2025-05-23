@@ -11,7 +11,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class City {
+public class Airport {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -19,6 +19,12 @@ public class City {
     @Column(nullable = false, unique = true)
     private String name;
 
-    @OneToMany(mappedBy = "city")
-    private List<Airport> airports;
+    @ManyToOne
+    private City city;
+
+    @OneToMany(mappedBy = "from")
+    private List<Flight> departures;
+
+    @OneToMany(mappedBy = "to")
+    private List<Flight> arrivals;
 }

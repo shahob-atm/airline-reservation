@@ -3,6 +3,7 @@ package com.sh32bit.airline.controller;
 import com.sh32bit.airline.request.AuthenticationRequest;
 import com.sh32bit.airline.request.RegisterRequest;
 import com.sh32bit.airline.service.AuthService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Auth", description = "Auth APIs")
 public class AuthController {
     private final AuthService authService;
 

@@ -1,5 +1,6 @@
 package com.sh32bit.airline.entity;
 
+import com.sh32bit.airline.enums.TicketStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -22,7 +23,17 @@ public class Ticket {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
+    @Column(nullable = false)
     private String seatNumber;
 
-    private boolean cancelled;
+    @ManyToOne
+    private Flight flight;
+
+    @Enumerated(EnumType.STRING)
+    private TicketStatus status;
+
+    @PrePersist
+    public void onCreate() {
+        bookedAt = LocalDateTime.now();
+    }
 }
