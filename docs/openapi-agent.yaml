@@ -1,0 +1,457 @@
+openapi: 3.0.1
+info:
+  title: Airline Reservation System API
+  version: "1.0"
+  description: REST API for Ticket reservation
+
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/auth/login:
+    post:
+      summary: User login
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticationRequest'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+        '400':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  value:
+                    message: "Invalid email or password"
+        '403':
+          description: User is disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                userDisabled:
+                  value:
+                    message: "User account is disabled"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                serverError:
+                  value:
+                    message: "Internal Server Error"
+  /api/agent/flights:
+    post:
+      summary: Create new flight
+      tags:
+        - Agent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlightRequest'
+      responses:
+        '200':
+          description: Flight created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              examples:
+                success:
+                  value:
+                    message: "Flight created successfully"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                blankField:
+                  value:
+                    message: "Departure time must be in the future"
+        '404':
+          description: Related entity not found (airport, agent, company)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFound:
+                  value:
+                    message: "Airport not found"
+        '409':
+          description: Conflict (duplicate, from and to airports are the same, or arrival time before departure)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                airportsSame:
+                  value:
+                    message: "From Airport and To Airport are the same"
+                timeInvalid:
+                  value:
+                    message: "Arrival time must be after departure time"
+                agentExists:
+                  value:
+                    message: "This company already has an agent at this airport!"
+  /api/agent/flights/batch:
+    post:
+      summary: Batch create flights
+      tags:
+        - Agent
+      description: Upload and create multiple flights at once.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlightBatchUploadRequest'
+      responses:
+        '200':
+          description: Flights created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              examples:
+                success:
+                  value:
+                    message: "Flights created successfully"
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                blankList:
+                  value:
+                    message: "Flights list must not be empty"
+        '409':
+          description: Conflict (duplicate or invalid flight)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicate:
+                  value:
+                    message: "Some flights already exist"
+  /api/agent/flights/upload:
+    post:
+      summary: Upload flights via file
+      tags:
+        - Agent
+      description: Upload a YAML file containing multiple flights to create them in batch.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The YAML file with flights
+      responses:
+        '200':
+          description: Flights uploaded and created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              examples:
+                success:
+                  value:
+                    message: "Flights created successfully"
+        '400':
+          description: Invalid file or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidFile:
+                  value:
+                    message: "Invalid file format"
+                validationError:
+                  value:
+                    message: "Some flights are invalid"
+        '409':
+          description: Conflict (duplicate flights)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicate:
+                  value:
+                    message: "Some flights already exist"
+  /api/agent/flights/{id}:
+    put:
+      summary: Update flight
+      tags:
+        - Agent
+      description: Update specific fields of an existing flight.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Flight ID to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlightUpdateRequest'
+      responses:
+        '200':
+          description: Flight updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              examples:
+                success:
+                  value:
+                    message: "Flight updated, all customers notified."
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidTime:
+                  value:
+                    message: "Departure time must be in the future"
+        '404':
+          description: Flight not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFound:
+                  value:
+                    message: "Flight not found"
+        '409':
+          description: Conflict (seats, duplicate, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                seatConflict:
+                  value:
+                    message: "Total seats cannot be less than tickets already sold"
+  /api/agent/flights/all:
+    get:
+      summary: Get agent's flights
+      tags:
+        - Agent
+      description: Get all flights managed by the agent, optionally filtered by company.
+      parameters:
+        - name: companyId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+          description: Filter by company ID
+      responses:
+        '200':
+          description: List of agent flights
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FlightResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AuthenticationRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          example: agent@mail.com
+        password:
+          type: string
+          example: agent123
+    AuthenticationResponse:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+      properties:
+        accessToken:
+          type: string
+          example: access_token
+        refreshToken:
+          type: string
+          example: refresh_token
+    FlightRequest:
+      type: object
+      required:
+        - fromAirportId
+        - toAirportId
+        - companyId
+        - agentId
+        - departureTime
+        - arrivalTime
+        - totalSeats
+        - price
+      properties:
+        fromAirportId:
+          type: integer
+          format: int64
+          example: 1
+        toAirportId:
+          type: integer
+          format: int64
+          example: 2
+        companyId:
+          type: integer
+          format: int64
+          example: 1
+        agentId:
+          type: integer
+          format: int64
+          example: 10
+        departureTime:
+          type: string
+          format: date-time
+          example: "2025-06-02T14:00:00"
+        arrivalTime:
+          type: string
+          format: date-time
+          example: "2025-06-02T18:30:00"
+        totalSeats:
+          type: integer
+          example: 180
+        price:
+          type: number
+          format: double
+          example: 950000.00
+    FlightBatchUploadRequest:
+      type: object
+      properties:
+        flights:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/FlightRequest'
+      required:
+        - flights
+    FlightUpdateRequest:
+      type: object
+      properties:
+        departureTime:
+          type: string
+          format: date-time
+          example: "2025-06-10T12:00:00"
+        arrivalTime:
+          type: string
+          format: date-time
+          example: "2025-06-10T16:30:00"
+        price:
+          type: number
+          format: double
+          example: 1200000.00
+        totalSeats:
+          type: integer
+          example: 150
+    FlightResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 12
+        fromAirport:
+          type: string
+          example: "Tashkent International Airport"
+        toAirport:
+          type: string
+          example: "Istanbul Airport"
+        companyName:
+          type: string
+          example: "UzAirways"
+        agentName:
+          type: string
+          example: "Ali Valiyev"
+        departureTime:
+          type: string
+          format: date-time
+          example: "2025-06-10T12:00:00"
+        arrivalTime:
+          type: string
+          format: date-time
+          example: "2025-06-10T16:30:00"
+        totalSeats:
+          type: integer
+          example: 180
+        availableSeats:
+          type: integer
+          example: 90
+        price:
+          type: number
+          format: double
+          example: 1500000.00
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-06-05T08:00:00"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-06-05T10:15:00"
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+security:
+  - BearerAuth: []

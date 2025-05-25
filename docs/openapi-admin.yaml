@@ -1,0 +1,652 @@
+openapi: 3.0.1
+info:
+  title: Airline Reservation System API
+  version: "1.0"
+  description: REST API for Ticket reservation
+
+servers:
+  - url: http://localhost:8080
+
+paths:
+  /api/auth/login:
+    post:
+      summary: User login
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticationRequest'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+        '400':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  value:
+                    message: "Invalid email or password"
+        '403':
+          description: User is disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                userDisabled:
+                  value:
+                    message: "User account is disabled"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                serverError:
+                  value:
+                    message: "Internal Server Error"
+  /api/admin/cities:
+    post:
+      summary: Create new city
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CityRequest'
+      responses:
+        '200':
+          description: City created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              examples:
+                success:
+                  value:
+                    message: "City created successfully"
+        '400':
+          description: Validation error (e.g., name is blank)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                blankName:
+                  value:
+                    message: "name must not be blank"
+        '409':
+          description: City with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicateName:
+                  value:
+                    message: "City with this name already exists"
+  /api/admin/airports:
+    post:
+      summary: Create new airport
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AirportRequest'
+      responses:
+        '200':
+          description: Airport created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              examples:
+                success:
+                  value:
+                    message: "Airport created successfully"
+        '400':
+          description: Validation error (e.g., name is blank, cityId is null)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                blankName:
+                  value:
+                    message: "name must not be blank"
+                nullCityId:
+                  value:
+                    message: "cityId must not be null"
+        '404':
+          description: City not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                cityNotFound:
+                  value:
+                    message: "City not found"
+        '409':
+          description: Airport with this name already exists in city
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicateAirport:
+                  value:
+                    message: "Airport with this name already exists in the city"
+  /api/admin/companies:
+    post:
+      summary: Create new company
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyRequest'
+      responses:
+        '200':
+          description: Company created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              examples:
+                success:
+                  value:
+                    message: "Company created successfully"
+        '400':
+          description: Validation error (name is blank)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                blankName:
+                  value:
+                    message: "name must not be blank"
+        '409':
+          description: Company with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicateCompany:
+                  value:
+                    message: "Company with this name already exists"
+  /api/admin/agents:
+    post:
+      summary: Create new agent
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentRequest'
+      responses:
+        '201':
+          description: Agent successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Validation error (missing or invalid data)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingField:
+                  summary: Required field missing
+                  value:
+                    message: "Field 'email' is required"
+                invalidFormat:
+                  summary: Invalid email format
+                  value:
+                    message: "Invalid email format"
+        '403':
+          description: Not authorized (e.g., user is blocked)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                userDisabled:
+                  value:
+                    message: "User is disabled"
+        '409':
+          description: Duplicate email (conflict)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicateEmail:
+                  value:
+                    message: "Email is already in use"
+        '404':
+          description: Related entity not found (e.g., company or airport does not exist)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                companyNotFound:
+                  value:
+                    message: "Company not found"
+                airportNotFound:
+                  value:
+                    message: "Airport not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/admin/customers/{id}/block:
+    put:
+      summary: Block customer by ID
+      tags:
+        - Admin
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Customer's unique identifier
+      responses:
+        '200':
+          description: Customer blocked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              examples:
+                success:
+                  value:
+                    message: "Customer blocked"
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                customerNotFound:
+                  value:
+                    message: "Customer not found"
+        '409':
+          description: Customer is already blocked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                alreadyBlocked:
+                  value:
+                    message: "Customer is already blocked"
+  /api/admin/customers/{id}/unblock:
+    put:
+      summary: Unblock customer by ID
+      tags:
+        - Admin
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Customer's unique identifier
+      responses:
+        '200':
+          description: Customer unblocked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              examples:
+                success:
+                  value:
+                    message: "Customer unblocked"
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                customerNotFound:
+                  value:
+                    message: "Customer not found"
+        '409':
+          description: Customer is already active (not blocked)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                alreadyActive:
+                  value:
+                    message: "Customer is already active"
+  /api/admin/agents/{id}/block:
+    put:
+      summary: Block agent by ID
+      tags:
+        - Admin
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Agent's unique identifier
+      responses:
+        '200':
+          description: Agent blocked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              examples:
+                success:
+                  value:
+                    message: "Agent blocked"
+        '404':
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                agentNotFound:
+                  value:
+                    message: "Agent not found"
+        '409':
+          description: Agent is already blocked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                alreadyBlocked:
+                  value:
+                    message: "Agent is already blocked"
+  /api/admin/agents/{id}/unblock:
+    put:
+      summary: Unblock agent by ID
+      tags:
+        - Admin
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Agent's unique identifier
+      responses:
+        '200':
+          description: Agent unblocked successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              examples:
+                success:
+                  value:
+                    message: "Agent unblocked"
+        '404':
+          description: Agent not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                agentNotFound:
+                  value:
+                    message: "Agent not found"
+        '409':
+          description: Agent is already active (not blocked)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                alreadyActive:
+                  value:
+                    message: "Agent is already active"
+  /api/admin/agents/all:
+    get:
+      summary: Get all agents
+      tags:
+        - Admin
+      description: Returns a list of all registered agents.
+      responses:
+        '200':
+          description: List of agents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AgentResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+  /api/admin/customers/all:
+    get:
+      summary: Get all customers
+      tags:
+        - Admin
+      description: Returns a list of all registered customers.
+      responses:
+        '200':
+          description: List of customers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomerResponse'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AuthenticationRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          example: admin@mail.com
+        password:
+          type: string
+          example: admin123
+    AuthenticationResponse:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+      properties:
+        accessToken:
+          type: string
+          example: access_token
+        refreshToken:
+          type: string
+          example: refresh_token
+    CityRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "Tashkent"
+    AirportRequest:
+      type: object
+      required:
+        - name
+        - cityId
+      properties:
+        name:
+          type: string
+          example: "Tashkent International Airport"
+        cityId:
+          type: integer
+          format: int64
+          example: 1
+    CompanyRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "UzAirways"
+    AgentRequest:
+      type: object
+      required:
+        - companyId
+        - airportId
+        - email
+        - password
+        - firstName
+        - lastName
+      properties:
+        companyId:
+          type: integer
+          format: int64
+          example: 1
+        airportId:
+          type: integer
+          format: int64
+          example: 2
+        email:
+          type: string
+          example: agent@example.com
+        password:
+          type: string
+          format: password
+          example: agent123
+        firstName:
+          type: string
+          example: John
+        lastName:
+          type: string
+          example: Doe
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Operation successfully completed"
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    AgentResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 5
+        email:
+          type: string
+          example: agent@example.com
+        firstName:
+          type: string
+          example: Ali
+        lastName:
+          type: string
+          example: Valiyev
+        active:
+          type: boolean
+          example: true
+        companyName:
+          type: string
+          example: "UzAirways"
+        airportName:
+          type: string
+          example: "Tashkent International Airport"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-05-26T09:30:00"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-05-26T10:00:00"
+    CustomerResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 101
+        email:
+          type: string
+          example: customer@mail.com
+        firstName:
+          type: string
+          example: Jamshid
+        lastName:
+          type: string
+          example: Ubaydullayev
+        active:
+          type: boolean
+          example: true
+        cityName:
+          type: string
+          example: "Tashkent"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-05-26T09:30:00"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-05-26T10:00:00"
+
+security:
+  - BearerAuth: []

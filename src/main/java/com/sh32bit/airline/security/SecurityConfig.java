@@ -36,6 +36,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/customer/**")
                         .hasAnyAuthority(Role.CUSTOMER.getAuthority(), Role.AGENT.getAuthority(), Role.ADMIN.getAuthority())
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/docs/**"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e.authenticationEntryPoint(authEntryPoint))

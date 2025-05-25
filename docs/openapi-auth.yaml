@@ -1,0 +1,175 @@
+openapi: 3.0.1
+info:
+  title: Airline Reservation System API
+  version: "1.0"
+  description: REST API for Ticket reservation
+
+servers:
+  - url: http://localhost:8080
+
+paths:
+  /api/auth/login:
+    post:
+      summary: User login
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticationRequest'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+        '400':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  value:
+                    message: "Invalid email or password"
+        '403':
+          description: User is disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                userDisabled:
+                  value:
+                    message: "User account is disabled"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                serverError:
+                  value:
+                    message: "Internal Server Error"
+  /api/auth/register:
+    post:
+      summary: User registration
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              examples:
+                success:
+                  value:
+                    message: "User registered successfully"
+        '400':
+          description: Validation or registration error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidEmail:
+                  value:
+                    message: "Email must be valid"
+                passwordMismatch:
+                  value:
+                    message: "Password and Confirm Password do not match"
+                shortPassword:
+                  value:
+                    message: "Password must be at least 6 characters"
+        '409':
+          description: Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                duplicateEmail:
+                  value:
+                    message: "Email is already in use"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AuthenticationRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          example: ali@mail.com
+        password:
+          type: string
+          example: 22222222
+    AuthenticationResponse:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+      properties:
+        accessToken:
+          type: string
+          example: access_token
+        refreshToken:
+          type: string
+          example: refresh_token
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    RegisterRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - password
+        - confirmPassword
+      properties:
+        firstName:
+          type: string
+          example: Ali
+        lastName:
+          type: string
+          example: Valiyev
+        email:
+          type: string
+          example: ali@mail.com
+        password:
+          type: string
+          example: "12345678"
+        confirmPassword:
+          type: string
+          example: "12345678"
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+security:
+  - BearerAuth: []

@@ -1,46 +1,75 @@
 package com.sh32bit.airline.exception;
 
+import com.sh32bit.airline.response.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<?> handleValidationErrors(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getFieldErrors().forEach(error ->
-                errors.put(error.getField(), error.getDefaultMessage()));
-        log.warn("Validation error: {}", errors);
-        return ResponseEntity.badRequest().body(errors);
+    public ResponseEntity<ErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex) {
+        String msg = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+        log.warn("Validation error: {}", msg);
+        return ResponseEntity.badRequest().body(new ErrorResponse(msg));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<?> handleConstraintViolations(ConstraintViolationException ex) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getConstraintViolations().forEach(cv -> {
-            String field = cv.getPropertyPath().toString();
-            errors.put(field.substring(field.lastIndexOf('.') + 1), cv.getMessage());
-        });
-        return ResponseEntity.badRequest().body(errors);
+    public ResponseEntity<ErrorResponse> handleConstraintViolations(ConstraintViolationException ex) {
+        String msg = ex.getConstraintViolations().stream()
+                .map(cv -> {
+                    String field = cv.getPropertyPath().toString();
+                    field = field.substring(field.lastIndexOf('.') + 1);
+                    return field + ": " + cv.getMessage();
+                })
+                .collect(Collectors.joining("; "));
+        return ResponseEntity.badRequest().body(new ErrorResponse(msg));
     }
 
     @ExceptionHandler({PasswordMismatchException.class, EmailAlreadyExistsException.class})
-    public ResponseEntity<?> handleCustomAuthExceptions(RuntimeException ex) {
-        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
+    public ResponseEntity<ErrorResponse> handleCustomAuthExceptions(RuntimeException ex) {
+        return ResponseEntity.badRequest().body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(value = { AccessDeniedException.class })
+    public ResponseEntity<?> handleAccessDeniedException(Exception ex) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("messages", List.of("Unauthorized: Access is denied")));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> handleGeneralErrors(Exception ex) {
+    public ResponseEntity<ErrorResponse> handleGeneralErrors(Exception ex) {
+        log.error("Unexpected error:", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", ex.getMessage()));
+                .body(new ErrorResponse("Internal Server Error: " + ex.getMessage()));
     }
 }

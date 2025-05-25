@@ -52,7 +52,7 @@ public class AuthServiceImpl implements AuthService {
 
         userRepository.save(user);
         log.info("New user registered: email={}, role={}", user.getEmail(), user.getRole());
-        return new MessageResponse("User registered successfully");
+        return new MessageResponse("success");
     }
 
     @Override

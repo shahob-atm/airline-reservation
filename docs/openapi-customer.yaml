@@ -1,0 +1,656 @@
+openapi: 3.0.1
+info:
+  title: Airline Reservation System API
+  version: "1.0"
+  description: REST API for Ticket reservation
+
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/auth/login:
+    post:
+      summary: User login
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticationRequest'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationResponse'
+        '400':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  value:
+                    message: "Invalid email or password"
+        '403':
+          description: User is disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                userDisabled:
+                  value:
+                    message: "User account is disabled"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                serverError:
+                  value:
+                    message: "Internal Server Error"
+  /api/customer/profile:
+    get:
+      summary: Get customer profile
+      tags:
+        - Customer
+      responses:
+        '200':
+          description: Successful profile fetch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+              examples:
+                example:
+                  value:
+                    id: 7
+                    email: "ali@mail.com"
+                    firstName: "Ali"
+                    lastName: "Valiyev"
+                    active: true
+                    cityName: "Tashkent"
+                    createdAt: "2025-05-20T12:45:30"
+                    updatedAt: "2025-05-25T10:23:00"
+        '401':
+          description: Unauthorized (missing or invalid JWT)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unauthorized:
+                  value:
+                    message: "Unauthorized"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                error:
+                  value:
+                    message: "Internal Server Error"
+  /api/customer/profile/city:
+    put:
+      summary: Select customer city
+      tags:
+        - Customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CitySelectRequest'
+            examples:
+              example:
+                value:
+                  cityId: 1
+      responses:
+        '200':
+          description: City selected successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              examples:
+                example:
+                  value:
+                    message: "City selected successfully"
+        '400':
+          description: Validation error or invalid city
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCity:
+                  value:
+                    message: "City not found"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unauthorized:
+                  value:
+                    message: "Unauthorized"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                error:
+                  value:
+                    message: "Internal Server Error"
+  /api/customer/airports:
+    get:
+      summary: Get airports by customer's city
+      tags:
+        - Customer
+      responses:
+        '200':
+          description: List of airports in customer's city
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AirportResponse'
+              examples:
+                example:
+                  value:
+                    - id: 1
+                      name: "Tashkent International Airport"
+                      cityName: "Tashkent"
+                    - id: 2
+                      name: "Sergeli Airport"
+                      cityName: "Tashkent"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unauthorized:
+                  value:
+                    messages:
+                      - "Unauthorized"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                error:
+                  value:
+                    messages:
+                      - "Internal Server Error"
+  /api/customer/flights:
+    get:
+      summary: Search available flights
+      tags:
+        - Customer
+      parameters:
+        - in: query
+          name: fromAirportId
+          schema:
+            type: integer
+            format: int64
+          required: false
+          description: ID of the departure airport
+        - in: query
+          name: toAirportId
+          schema:
+            type: integer
+            format: int64
+          required: false
+          description: ID of the destination airport
+        - in: query
+          name: date
+          schema:
+            type: string
+            format: date
+            example: "2025-06-11"
+          required: false
+          description: Departure date (yyyy-MM-dd)
+      responses:
+        '200':
+          description: List of found flights
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FlightResponse'
+              examples:
+                example:
+                  value:
+                    - id: 10
+                      fromAirport: "Tashkent International Airport"
+                      toAirport: "Samarkand Airport"
+                      companyName: "UzAirways"
+                      agentFullName: "Ali Valiyev"
+                      departureTime: "2025-06-11T08:00:00"
+                      arrivalTime: "2025-06-11T09:30:00"
+                      totalSeats: 150
+                      availableSeats: 35
+                      price: 850000.00
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unauthorized:
+                  value:
+                    messages:
+                      - "Unauthorized"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                error:
+                  value:
+                    messages:
+                      - "Internal Server Error"
+  /api/customer/tickets:
+    post:
+      summary: Buy a ticket for a flight
+      tags:
+        - Customer
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketRequest'
+            examples:
+              example:
+                value:
+                  flightId: 15
+      responses:
+        '200':
+          description: Ticket bought successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              examples:
+                success:
+                  value:
+                    message: "Ticket bought successfully"
+        '400':
+          description: Validation error or ticket buying error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notAvailable:
+                  value:
+                    messages:
+                      - "No seats available"
+                alreadyBought:
+                  value:
+                    messages:
+                      - "You have already bought a ticket for this flight"
+        '404':
+          description: Flight not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFound:
+                  value:
+                    messages:
+                      - "Flight not found"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unauthorized:
+                  value:
+                    messages:
+                      - "Unauthorized"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                error:
+                  value:
+                    messages:
+                      - "Internal Server Error"
+  /api/customer/tickets/{ticketId}:
+    delete:
+      summary: Cancel (refund) a ticket
+      tags:
+        - Customer
+      parameters:
+        - in: path
+          name: ticketId
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Ticket ID to cancel
+      responses:
+        '200':
+          description: Ticket cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              examples:
+                success:
+                  value:
+                    message: "Ticket cancelled successfully"
+        '400':
+          description: Ticket cannot be cancelled (e.g., already used, flight departed, etc.)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                cannotCancel:
+                  value:
+                    messages:
+                      - "Ticket cannot be cancelled after departure"
+        '404':
+          description: Ticket not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFound:
+                  value:
+                    messages:
+                      - "Ticket not found"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unauthorized:
+                  value:
+                    messages:
+                      - "Unauthorized"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                error:
+                  value:
+                    messages:
+                      - "Internal Server Error"
+  /api/customer/tickets/all:
+    get:
+      summary: Get all tickets for the current customer
+      tags:
+        - Customer
+      security:
+        - BearerAuth: [ ]
+      responses:
+        '200':
+          description: List of tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TicketResponse'
+              examples:
+                tickets:
+                  value:
+                    - id: 123
+                      flightFrom: "Tashkent International Airport"
+                      flightTo: "Istanbul Ataturk Airport"
+                      bookedAt: "2025-06-01T10:30:00"
+                      departureTime: "2025-06-10T15:00:00"
+                      arrivalTime: "2025-06-10T19:00:00"
+                      seatNumber: "12A"
+                      status: "ACTIVE"
+                      price: 950000.00
+                    - id: 124
+                      flightFrom: "Tashkent International Airport"
+                      flightTo: "Moscow Sheremetyevo"
+                      bookedAt: "2025-06-02T14:45:00"
+                      departureTime: "2025-06-15T13:30:00"
+                      arrivalTime: "2025-06-15T16:45:00"
+                      seatNumber: "18C"
+                      status: "CANCELLED"
+                      price: 830000.00
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AuthenticationRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          example: customer@mail.com
+        password:
+          type: string
+          example: customer123
+    AuthenticationResponse:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+      properties:
+        accessToken:
+          type: string
+          example: access_token
+        refreshToken:
+          type: string
+          example: refresh_token
+    CustomerResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 7
+        email:
+          type: string
+          example: ali@mail.com
+        firstName:
+          type: string
+          example: Ali
+        lastName:
+          type: string
+          example: Valiyev
+        active:
+          type: boolean
+          example: true
+        cityName:
+          type: string
+          example: Tashkent
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-05-20T12:45:30"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-05-25T10:23:00"
+    ErrorResponse:
+      type: object
+      properties:
+        messages:
+          type: array
+          items:
+            type: string
+          example:
+            - "City not found"
+            - "Unauthorized"
+            - "Ticket not found"
+    CitySelectRequest:
+      type: object
+      required:
+        - cityId
+      properties:
+        cityId:
+          type: integer
+          format: int64
+          example: 1
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: array
+          items:
+            type: string
+          example:
+            - "City selected successfully"
+            - "Ticket cancelled successfully"
+    AirportResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: "Tashkent International Airport"
+        cityName:
+          type: string
+          example: "Tashkent"
+    FlightResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 10
+        fromAirport:
+          type: string
+          example: "Tashkent International Airport"
+        toAirport:
+          type: string
+          example: "Samarkand Airport"
+        companyName:
+          type: string
+          example: "UzAirways"
+        agentFullName:
+          type: string
+          example: "Ali Valiyev"
+        departureTime:
+          type: string
+          format: date-time
+          example: "2025-06-11T08:00:00"
+        arrivalTime:
+          type: string
+          format: date-time
+          example: "2025-06-11T09:30:00"
+        totalSeats:
+          type: integer
+          example: 150
+        availableSeats:
+          type: integer
+          example: 35
+        price:
+          type: number
+          format: double
+          example: 850000.00
+    TicketRequest:
+      type: object
+      required:
+        - flightId
+      properties:
+        flightId:
+          type: integer
+          format: int64
+          example: 15
+    TicketResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 123
+        flightFrom:
+          type: string
+          example: "Tashkent International Airport"
+        flightTo:
+          type: string
+          example: "Istanbul Ataturk Airport"
+        bookedAt:
+          type: string
+          format: date-time
+          example: "2025-06-01T10:30:00"
+        departureTime:
+          type: string
+          format: date-time
+          example: "2025-06-10T15:00:00"
+        arrivalTime:
+          type: string
+          format: date-time
+          example: "2025-06-10T19:00:00"
+        seatNumber:
+          type: string
+          example: "12A"
+        status:
+          type: string
+          enum: [ ACTIVE, CANCELLED, USED ]
+          example: "ACTIVE"
+        price:
+          type: number
+          format: double
+          example: 950000.00
+
+security:
+  - BearerAuth: []
