@@ -20,6 +20,7 @@ import com.sh32bit.airline.request.FlightRequest;
 import com.sh32bit.airline.request.FlightUpdateRequest;
 import com.sh32bit.airline.response.FlightResponse;
 import com.sh32bit.airline.response.MessageResponse;
+import com.sh32bit.airline.security.AppUserDetails;
 import com.sh32bit.airline.service.AgentService;
 import com.sh32bit.airline.service.EmailNotificationService;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -45,7 +47,7 @@ public class AgentServiceImpl implements AgentService {
 
     @Override
     @Transactional
-    public MessageResponse createFlight(FlightRequest request) {
+    public MessageResponse createFlight(FlightRequest request, AppUserDetails user) {
         if (request.getArrivalTime().isBefore(request.getDepartureTime())) {
             throw new ConflictException("Arrival time must be after departure time");
         }
@@ -61,6 +63,12 @@ public class AgentServiceImpl implements AgentService {
         Airport to = getAirport(request.getToAirportId());
         Agent agent = getAgent(request.getAgentId());
         Company company = getCompany(request.getCompanyId());
+
+        Long agentId = user.getUser().getId();
+
+        if (!Objects.equals(agentId, agent.getId())) {
+            throw new ConflictException("Agent is not in this company");
+        }
 
         if (flightRepository.existsByFromAndToAndCompanyAndDepartureTime(
                 from, to, company, request.getDepartureTime())) {
@@ -82,7 +90,7 @@ public class AgentServiceImpl implements AgentService {
 
     @Override
     @Transactional
-    public MessageResponse batchCreateFlights(FlightBatchUploadRequest request) {
+    public MessageResponse batchCreateFlights(FlightBatchUploadRequest request, AppUserDetails user) {
         int count = 0, skipped = 0, error = 0;
         LocalDateTime now = LocalDateTime.now();
         List<String> errors = new ArrayList<>();
@@ -92,7 +100,7 @@ public class AgentServiceImpl implements AgentService {
                     skipped++;
                     continue;
                 }
-                createFlight(f);
+                createFlight(f, user);
                 count++;
             } catch (ConflictException e) {
                 error++;
@@ -113,7 +121,7 @@ public class AgentServiceImpl implements AgentService {
 
     @Override
     @Transactional
-    public MessageResponse uploadFlights(MultipartFile file) {
+    public MessageResponse uploadFlights(MultipartFile file, AppUserDetails user) {
         try {
             String filename = file.getOriginalFilename();
             ObjectMapper mapper = (filename != null && (filename.endsWith(".yaml") || filename.endsWith(".yml")))
@@ -122,7 +130,7 @@ public class AgentServiceImpl implements AgentService {
             mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
             FlightBatchUploadRequest batchRequest = mapper.readValue(file.getInputStream(),
                     FlightBatchUploadRequest.class);
-            return batchCreateFlights(batchRequest);
+            return batchCreateFlights(batchRequest, user);
         } catch (Exception e) {
             log.error("Failed to parse uploaded file: {}", e.getMessage());
             throw new ConflictException("Failed to parse uploaded file: " + e.getMessage());
@@ -131,9 +139,15 @@ public class AgentServiceImpl implements AgentService {
 
     @Override
     @Transactional
-    public MessageResponse updateFlight(Long flightId, FlightUpdateRequest request) {
+    public MessageResponse updateFlight(Long flightId, FlightUpdateRequest request, AppUserDetails user) {
         Flight flight = flightRepository.findById(flightId)
                 .orElseThrow(() -> new NotFoundException("Flight not found"));
+
+        Long agentId = user.getUser().getId();
+        if (!Objects.equals(agentId, flight.getAgent().getId())) {
+            throw new ConflictException("Agent is not in this company");
+        }
+
         boolean changed = false;
         StringBuilder changes = new StringBuilder();
 
@@ -185,10 +199,13 @@ public class AgentServiceImpl implements AgentService {
     }
 
     @Override
-    public List<FlightResponse> getAgentFlights(Long companyId) {
+    public List<FlightResponse> getAgentFlights(Long companyId, AppUserDetails user) {
+        Long agentId = user.getUser().getId();
+
         List<Flight> flights = (companyId != null)
-                ? flightRepository.findAll().stream().filter(f -> f.getCompany().getId().equals(companyId)).toList()
-                : flightRepository.findAll();
+                ? flightRepository.findAll().stream().filter(f ->
+                f.getCompany().getId().equals(companyId) && f.getAgent().getId().equals(agentId)).toList()
+                : List.of();
         return flights.stream().map(FlightMapper::fromEntity).collect(Collectors.toList());
     }
 

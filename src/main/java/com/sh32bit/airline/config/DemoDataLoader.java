@@ -67,20 +67,34 @@ public class DemoDataLoader implements CommandLineRunner {
                     .airport(tashkentAirport)
                     .build();
             userRepository.save(agent);
-        }
 
-        // 6. CUSTOMER
-        if (userRepository.findByEmail("customer@mail.com").isEmpty()) {
-            Customer customer = Customer.builder()
-                    .email("customer@mail.com")
-                    .password(passwordEncoder.encode("customer123"))
-                    .firstName("Customer")
-                    .lastName("Aliyev")
-                    .role(Role.CUSTOMER)
-                    .active(true)
-                    .city(istanbul)
-                    .build();
-            userRepository.save(customer);
+            if (userRepository.findByEmail("agent2@mail.com").isEmpty()) {
+                Agent agent2 = Agent.builder()
+                        .email("agent2@mail.com")
+                        .password(passwordEncoder.encode("agent123"))
+                        .firstName("Kamol")
+                        .lastName("Jamolov")
+                        .role(Role.AGENT)
+                        .active(true)
+                        .company(turkish)
+                        .airport(istanbulAirport)
+                        .build();
+                userRepository.save(agent2);
+            }
+
+            // 6. CUSTOMER
+            if (userRepository.findByEmail("customer@mail.com").isEmpty()) {
+                Customer customer = Customer.builder()
+                        .email("customer@mail.com")
+                        .password(passwordEncoder.encode("customer123"))
+                        .firstName("Customer")
+                        .lastName("Aliyev")
+                        .role(Role.CUSTOMER)
+                        .active(true)
+                        .city(istanbul)
+                        .build();
+                userRepository.save(customer);
+            }
         }
     }
 }
